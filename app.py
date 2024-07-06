@@ -60,8 +60,62 @@ def categorize_province(row):
     else:
         return 'RED'
     
-
 average_annual_waste['Category'] = average_annual_waste.apply(categorize_province, axis=1)
+
+# Generate and save graphs
+# 1. Total annual waste generation in each province each year
+top_n = 10  
+average_waste_by_province = annual_waste.groupby('Province')['Annual Waste (tons)'].mean().reset_index()
+top_provinces = average_waste_by_province.nlargest(top_n, 'Annual Waste (tons)')['Province']
+filtered_annual_waste = annual_waste[annual_waste['Province'].isin(top_provinces)]
+
+# Generate and save graphs
+# 1. Total annual waste generation in top N provinces each year
+plt.figure(figsize=(14, 7))
+sns.set_palette("tab20")  # Use a distinct color palette with more colors
+sns.barplot(data=filtered_annual_waste, x='Year', y='Annual Waste (tons)', hue='Province', dodge=True)
+plt.title(f'Total Annual Waste Generation in Top {top_n} Provinces Each Year', fontsize=16, fontweight='bold')
+plt.xlabel('Year', fontsize=14)
+plt.ylabel('Annual Waste (tons)', fontsize=14)
+plt.xticks(fontsize=12)
+plt.yticks(fontsize=12)
+plt.grid(True, linestyle='--', alpha=0.7)
+plt.legend(title='Province', title_fontsize='13', fontsize='12', bbox_to_anchor=(1.05, 1), loc='upper left')
+plt.tight_layout(rect=[0, 0, 0.85, 1]) 
+plt.savefig('static/total_annual_waste.png')
+
+# 2. Average total annual waste generation in each province for all years
+plt.figure(figsize=(14, 7))
+sns.barplot(data=average_annual_waste, x='Province', y='Annual Waste (tons)', hue='Category', dodge=False)
+plt.title('Average Total Annual Waste Generation in Each Province for All Years')
+plt.xlabel('Province')
+plt.ylabel('Average Annual Waste (tons)')
+plt.legend(title='Category')
+plt.xticks(rotation=45, ha='right')  
+plt.grid(True)
+plt.tight_layout() 
+plt.savefig('static/average_annual_waste.png')
+
+# 3. Province with the most annual waste generation each year
+plt.figure(figsize=(14, 7))
+sns.barplot(data=most_waste, x='Year', y='Annual Waste (tons)', hue='Province')
+plt.title('Province with Most Annual Waste Generation Each Year')
+plt.xlabel('Year')
+plt.ylabel('Annual Waste (tons)')
+plt.legend(title='Province')
+plt.grid(True)
+plt.savefig('static/most_annual_waste.png')
+
+# 4. Province with the least annual waste generation each year
+plt.figure(figsize=(14, 7))
+sns.barplot(data=least_waste, x='Year', y='Annual Waste (tons)', hue='Province')
+plt.title('Province with Least Annual Waste Generation Each Year')
+plt.xlabel('Year')
+plt.ylabel('Annual Waste (tons)')
+plt.legend(title='Province')
+plt.grid(True)
+plt.savefig('static/least_annual_waste.png')
+
 # 5. Graph of the total annual amount of waste in each province from year to year
 plt.figure(figsize=(14, 7))
 sns.lineplot(data=annual_waste, x='Year', y='Annual Waste (tons)', hue='Province', marker='o')
@@ -98,6 +152,14 @@ def get_annual_waste():
 @app.route('/data/average_annual_waste')
 def get_average_annual_waste():
     return jsonify(average_annual_waste.to_dict(orient='records'))
+
+@app.route('/data/most_waste')
+def get_most_waste():
+    return jsonify(most_waste.to_dict(orient='records'))
+
+@app.route('/data/least_waste')
+def get_least_waste():
+    return jsonify(least_waste.to_dict(orient='records'))
 
 if __name__ == '__main__':
     app.run(debug=True)
